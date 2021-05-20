@@ -9,17 +9,19 @@
 import UIKit
 import MapKit
 
-class ViewController: UIViewController,CLLocationManagerDelegate,MKMapViewDelegate {
+class ViewController: UIViewController,CLLocationManagerDelegate,MKMapViewDelegate, UITextFieldDelegate {
     
-    
-    @IBOutlet var mapView: MKMapView!
+    @IBOutlet weak var inputText: UITextField!
+    @IBOutlet weak var mapView: MKMapView!
     var locationManager: CLLocationManager!
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        // マップビュー張り付け
+        inputText.delegate = self
+        
+        /*// マップビュー張り付け
         view.addSubview(mapView)
         mapView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -27,7 +29,7 @@ class ViewController: UIViewController,CLLocationManagerDelegate,MKMapViewDelega
             mapView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             mapView.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor),
             mapView.rightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.rightAnchor),
-            ])
+            ])*/
         
         mapView.delegate = self
         // 緯度・軽度を設定
@@ -37,10 +39,10 @@ class ViewController: UIViewController,CLLocationManagerDelegate,MKMapViewDelega
         mapView.setCenter(location,animated:true)
         
         // 縮尺を設定
-        var region:MKCoordinateRegion = mapView.region
-        region.center = location
-        region.span.latitudeDelta = 0.02
-        region.span.longitudeDelta = 0.02
+        var scale:MKCoordinateRegion = mapView.region
+        scale.center = location
+        scale.span.latitudeDelta = 0.02
+        scale.span.longitudeDelta = 0.02
         
         mapView.setRegion(region,animated:true)
         
@@ -58,15 +60,54 @@ class ViewController: UIViewController,CLLocationManagerDelegate,MKMapViewDelega
         // mapにピンを表示する
         mapView.addAnnotation(pin)
         
-        mapView.delegate = self
     
     
     }
+    
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         // タップされたピンの位置情報
         print(view.annotation?.coordinate)
         // タップされたピンのタイトルとサブタイトル
         print(view.annotation?.title)
         print(view.annotation?.subtitle)
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        
+        if let searchKey = textField.text {
+            
+            print(searchKey)
+            
+            
+        }
+        return true
+    }
+    
+    
+    
+    let coordinate = CLLocationCoordinate2DMake(35.6598051, 139.7036661) // 渋谷ヒカリエ
+    let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000.0, longitudinalMeters: 1000.0) // 1km * 1km
+    
+    Map.search(query: "コンビニ", region: region) { (result) in
+    switch result {
+    case .success(let mapItems):
+    for map in mapItems {
+    print("name: \(map.name ?? "no name")")
+    print("coordinate: \(map.placemark.coordinate.latitude) \(map.placemark.coordinate.latitude)")
+    print("address \(map.placemark.address)")
+    }
+    case .failure(let error):
+    print("error \(error.localizedDescription)")
+    }
+    }
+
+
+}
+
+extension MKPlacemark {
+    var address: String {
+        let components = [self.administrativeArea, self.locality, self.thoroughfare, self.subThoroughfare]
+        return components.compactMap { $0 }.joined(separator: "")
     }
 }
